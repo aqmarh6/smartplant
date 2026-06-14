@@ -1,5 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMART PLAN PRO</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+font-family:Segoe UI,sans-serif;
+background:#eefbea;
+padding:15px;
+}
+
+.header{text-align:center}
+
+.cards{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+gap:15px;
+margin:20px 0;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+text-align:center;
+box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+
+.card div{
+font-size:28px;
+font-weight:bold;
+color:#1b5e20;
+}
+
+button{
+width:100%;
+padding:12px;
+background:#2e7d32;
+color:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+font-size:16px;
+}
+
+.chart-box{
+background:white;
+padding:15px;
+margin:20px 0;
+border-radius:15px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+margin-top:20px;
+}
+
+th,td{
+padding:10px;
+border:1px solid #ddd;
+text-align:center;
+font-size:14px;
+}
+
+th{
+background:#2e7d32;
+color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h1>🌿 SMART PLAN PRO</h1>
+<p>IoT Plant Monitoring Dashboard</p>
+</div>
+
+<div class="cards">
+<div class="card"><h3>🌡 Temperature</h3><div id="temp">--</div></div>
+<div class="card"><h3>💧 Humidity</h3><div id="hum">--</div></div>
+<div class="card"><h3>🌱 Soil Moisture</h3><div id="soil">--</div><p id="soilStatus"></p></div>
+<div class="card"><h3>☀ LDR</h3><div id="ldr">--</div><p id="lightStatus"></p></div>
+</div>
+
+<button onclick="loadData()">🔄 Refresh Data</button>
+
+<div class="chart-box">
+<canvas id="myChart"></canvas>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Temp</th>
+<th>Humidity</th>
+<th>Soil</th>
+<th>LDR</th>
+</tr>
+</thead>
+<tbody id="tableData"></tbody>
+</table>
+
 <script>
-const sheetURL='https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/export?format=csv&gid=0';
+
+const sheetURL = "https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/gviz/tq?tqx=out:csv";
 
 let chart;
 
@@ -9,105 +121,98 @@ try{
 
 const res = await fetch(sheetURL);
 const txt = await res.text();
-
-const rows = txt
-.replace(/\r/g,'')
-.trim()
-.split('\n')
-.filter(row => row.length > 0);
-
-if(rows.length <= 1){
-console.log("No data found");
-return;
-}
+const rows = txt.trim().split('\n');
 
 const labels = [];
 const temps = [];
+const hums = [];
+const soils = [];
+const ldrs = [];
 
-let html = '';
+let html = "";
 
-for(let i=Math.max(1,rows.length-20); i<rows.length; i++){
+// start from row 1 (skip header)
+for(let i = 1; i < rows.length; i++){
 
-let c = rows[i]
-.replace(/\r/g,'')
-.split(',');
+let c = rows[i].split(',');
 
-if(c.length < 5) continue;
+// clean data
+let time = c[0];
+let temp = Number(c[1]);
+let hum = Number(c[2]);
+let soil = Number(c[3]);
+let ldr = Number(c[4]);
 
-labels.push(c[0]);
-temps.push(Number(c[1]));
+labels.push(time);
+temps.push(temp);
+hums.push(hum);
+soils.push(soil);
+ldrs.push(ldr);
 
 html += `
 <tr>
-<td>${c[0]}</td>
-<td>${c[1]}</td>
-<td>${c[2]}</td>
-<td>${c[3]}</td>
-<td>${c[4]}</td>
-</tr>
-`;
+<td>${time}</td>
+<td>${temp}</td>
+<td>${hum}</td>
+<td>${soil}</td>
+<td>${ldr}</td>
+</tr>`;
 }
 
-document.getElementById('tableData').innerHTML = html;
+// table update
+document.getElementById("tableData").innerHTML = html;
 
-let latest = rows[rows.length-1]
-.replace(/\r/g,'')
-.split(',');
+// latest data
+let latest = rows[rows.length - 1].split(',');
 
-document.getElementById('temp').innerText =
-(latest[1] || 0) + '°C';
+document.getElementById("temp").innerText = latest[1] + " °C";
+document.getElementById("hum").innerText = latest[2] + " %";
+document.getElementById("soil").innerText = latest[3];
+document.getElementById("ldr").innerText = latest[4];
 
-document.getElementById('hum').innerText =
-(latest[2] || 0) + '%';
+// soil status
+document.getElementById("soilStatus").innerText =
+latest[3] < 300 ? "Dry" :
+latest[3] < 700 ? "Normal" : "Wet";
 
-document.getElementById('soil').innerText =
-(latest[3] || 0);
+// light status
+document.getElementById("lightStatus").innerText =
+latest[4] > 2000 ? "Night" : "Day";
 
-document.getElementById('ldr').innerText =
-(latest[4] || 0);
-
-document.getElementById('soilStatus').innerText =
-Number(latest[3]) < 300
-? 'Dry'
-: Number(latest[3]) < 700
-? 'Normal'
-: 'Wet';
-
-document.getElementById('lightStatus').innerText =
-Number(latest[4]) > 2000
-? 'Night'
-: 'Day';
-
+// chart update
 if(chart) chart.destroy();
 
-chart = new Chart(
-document.getElementById('myChart'),
-{
-type:'line',
+chart = new Chart(document.getElementById("myChart"),{
+type:"line",
 data:{
 labels:labels,
 datasets:[
-{
-label:'Temperature',
-data:temps,
-fill:false,
-tension:0.3
-}
+{label:"Temperature (°C)", data:temps, borderColor:"red", fill:false},
+{label:"Humidity (%)", data:hums, borderColor:"blue", fill:false},
+{label:"Soil Moisture", data:soils, borderColor:"green", fill:false},
+{label:"LDR", data:ldrs, borderColor:"orange", fill:false}
 ]
 },
 options:{
 responsive:true,
-maintainAspectRatio:true
+scales:{
+x:{display:true},
+y:{beginAtZero:true}
 }
 }
-);
+});
 
-}catch(error){
-console.error("Error loading sheet:", error);
+}catch(err){
+console.log("Error loading data:",err);
+alert("Failed to load Google Sheet data!");
 }
 
 }
 
 loadData();
 setInterval(loadData,10000);
+
 </script>
+
+</body>
+</html>
