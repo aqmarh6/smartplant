@@ -1,94 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SMART PLAN PRO</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body{font-family:Segoe UI,sans-serif;background:#eefbea;padding:15px}
-.header{text-align:center}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin:20px 0}
-.card{background:white;padding:20px;border-radius:15px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-.card div{font-size:32px;font-weight:bold;color:#1b5e20}
-button{width:100%;padding:12px;background:#2e7d32;color:white;border:none;border-radius:10px;cursor:pointer}
-.chart-box{background:white;padding:15px;margin:20px 0;border-radius:15px}
-table{width:100%;border-collapse:collapse;background:white}
-th,td{padding:10px;border:1px solid #ddd;text-align:center}
-th{background:#2e7d32;color:white}
-</style>
-</head>
-<body>
-
-<div class="header">
-<h1>🌿 SMART PLAN PRO</h1>
-<p>IoT Plant Monitoring Dashboard</p>
-</div>
-
-<div class="cards">
-<div class="card"><h3>🌡 Temperature</h3><div id="temp">--</div></div>
-<div class="card"><h3>💧 Humidity</h3><div id="hum">--</div></div>
-<div class="card"><h3>🌱 Soil Moisture</h3><div id="soil">--</div><p id="soilStatus"></p></div>
-<div class="card"><h3>☀ LDR</h3><div id="ldr">--</div><p id="lightStatus"></p></div>
-</div>
-
-<button onclick="loadData()">Refresh Data</button>
-
-<div class="chart-box">
-<canvas id="myChart"></canvas>
-</div>
-
-<table>
-<thead>
-<tr><th>Time</th><th>Temp</th><th>Humidity</th><th>Soil</th><th>LDR</th></tr>
-</thead>
-<tbody id="tableData"></tbody>
-</table>
-
 <script>
-const sheetURL='https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/gviz/tq?tqx=out:csv';
+const sheetURL =
+'https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/export?format=csv&gid=0';
+
 let chart;
 
-async function loadData(){
-const res=await fetch(sheetURL);
-const txt=await res.text();
-const rows=txt.trim().split('\\n');
+async function loadData() {
 
-const labels=[];
-const temps=[];
-let html='';
+try {
 
-for(let i=Math.max(1,rows.length-20);i<rows.length;i++){
- let c=rows[i].split(',');
- labels.push(c[0]);
- temps.push(Number(c[1]));
- html += `<tr><td>${c[0]}</td><td>${c[1]}</td><td>${c[2]}</td><td>${c[3]}</td><td>${c[4]}</td></tr>`;
+const response = await fetch(sheetURL);
+const csv = await response.text();
+
+const rows = csv.trim().split('\n');
+
+if(rows.length < 2) return;
+
+let labels = [];
+let tempData = [];
+let humData = [];
+let soilData = [];
+let ldrData = [];
+
+let tableHTML = '';
+
+for(let i=Math.max(1,rows.length-20); i<rows.length; i++){
+
+let col = rows[i].replace(/\r/g,'').split(',');
+
+if(col.length < 5) continue;
+
+let time = col[0];
+let temp = Number(col[1]) || 0;
+let hum = Number(col[2]) || 0;
+let soil = Number(col[3]) || 0;
+let ldr = Number(col[4]) || 0;
+
+labels.push(time);
+tempData.push(temp);
+humData.push(hum);
+soilData.push(soil);
+ldrData.push(ldr);
+
+tableHTML += `
+<tr>
+<td>${time}</td>
+<td>${temp}</td>
+<td>${hum}</td>
+<td>${soil}</td>
+<td>${ldr}</td>
+</tr>
+`;
 }
 
-document.getElementById('tableData').innerHTML=html;
+document.getElementById("tableData").innerHTML = tableHTML;
 
-let latest=rows[rows.length-1].split(',');
-document.getElementById('temp').innerText=latest[1]+'°C';
-document.getElementById('hum').innerText=latest[2]+'%';
-document.getElementById('soil').innerText=latest[3];
-document.getElementById('ldr').innerText=latest[4];
+let latest = rows[rows.length-1]
+.replace(/\r/g,'')
+.split(',');
 
-document.getElementById('soilStatus').innerText =
-latest[3] < 300 ? 'Dry' : latest[3] < 700 ? 'Normal' : 'Wet';
+let latestTemp = Number(latest[1]) || 0;
+let latestHum = Number(latest[2]) || 0;
+let latestSoil = Number(latest[3]) || 0;
+let latestLdr = Number(latest[4]) || 0;
 
-document.getElementById('lightStatus').innerText =
-latest[4] > 2000 ? 'Night' : 'Day';
+document.getElementById("temp").innerHTML =
+latestTemp + " °C";
+
+document.getElementById("hum").innerHTML =
+latestHum + " %";
+
+document.getElementById("soil").innerHTML =
+latestSoil;
+
+document.getElementById("ldr").innerHTML =
+latestLdr;
+
+let soilText = "Dry";
+
+if(latestSoil > 1500)
+soilText = "Wet";
+else if(latestSoil > 500)
+soilText = "Normal";
+
+document.getElementById("soilStatus").innerHTML =
+soilText;
+
+document.getElementById("lightStatus").innerHTML =
+latestLdr > 3000 ? "Dark" : "Bright";
 
 if(chart) chart.destroy();
-chart=new Chart(document.getElementById('myChart'),{
+
+chart = new Chart(
+document.getElementById("myChart"),
+{
 type:'line',
-data:{labels:labels,datasets:[{label:'Temperature',data:temps}]}
-});
+data:{
+labels:labels,
+datasets:[
+{
+label:'Temperature',
+data:tempData,
+borderWidth:2
+},
+{
+label:'Humidity',
+data:humData,
+borderWidth:2
+},
+{
+label:'Soil Moisture',
+data:soilData,
+borderWidth:2
+},
+{
+label:'LDR',
+data:ldrData,
+borderWidth:2
+}
+]
+},
+options:{
+responsive:true,
+maintainAspectRatio:false
+}
+}
+);
+
+} catch(error){
+console.log(error);
+}
+
 }
 
 loadData();
-setInterval(loadData,10000);
-</script>
 
-</body>
-</html>
+setInterval(loadData,5000);
+</script>
