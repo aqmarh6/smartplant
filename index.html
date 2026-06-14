@@ -14,7 +14,6 @@ padding:15px;
 
 .header{text-align:center}
 
-/* TOP ROW */
 .top-row{
 display:grid;
 grid-template-columns:3fr 1fr;
@@ -22,21 +21,19 @@ gap:15px;
 margin:20px 0;
 }
 
-/* BIG TIME BOX */
 .time-card{
 background:white;
 padding:25px;
 border-radius:15px;
 text-align:center;
 box-shadow:0 2px 8px rgba(0,0,0,.15);
-font-size:34px;
+font-size:32px;
 font-weight:bold;
 display:flex;
 align-items:center;
 justify-content:center;
 }
 
-/* SMALL LDR BOX */
 .ldr-card{
 background:white;
 padding:15px;
@@ -51,7 +48,6 @@ font-weight:bold;
 margin-top:5px;
 }
 
-/* SENSOR CARDS */
 .cards{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
@@ -73,7 +69,6 @@ font-weight:bold;
 margin-top:5px;
 }
 
-/* STATUS */
 .status{
 font-size:14px;
 margin-top:5px;
@@ -123,40 +118,36 @@ color:white;
 <p>IoT Plant Monitoring Dashboard</p>
 </div>
 
-<!-- TOP SECTION -->
 <div class="top-row">
 
-<div class="time-card" id="time">
-⏰ Loading...
-</div>
+<div class="time-card" id="time"></div>
 
 <div class="ldr-card">
 <h3>☀ LDR</h3>
-<div id="ldr">--</div>
-<div id="ldrStatus" class="status">--</div>
+<div id="ldr"></div>
+<div id="ldrStatus" class="status"></div>
 </div>
 
 </div>
 
-<!-- SENSOR -->
 <div class="cards">
 
 <div class="card">
 <h3>🌡 Temperature</h3>
-<div id="temp">--</div>
-<div id="tempStatus" class="status">--</div>
+<div id="temp"></div>
+<div id="tempStatus" class="status"></div>
 </div>
 
 <div class="card">
 <h3>💧 Humidity</h3>
-<div id="hum">--</div>
-<div id="humStatus" class="status">--</div>
+<div id="hum"></div>
+<div id="humStatus" class="status"></div>
 </div>
 
 <div class="card">
 <h3>🌱 Soil Moisture</h3>
-<div id="soil">--</div>
-<div id="soilStatus" class="status">--</div>
+<div id="soil"></div>
+<div id="soilStatus" class="status"></div>
 </div>
 
 </div>
@@ -167,8 +158,8 @@ color:white;
 <thead>
 <tr>
 <th>Time</th>
-<th>Temperature</th>
-<th>Humidity</th>
+<th>Temp</th>
+<th>Hum</th>
 <th>Soil</th>
 <th>LDR</th>
 </tr>
@@ -214,44 +205,35 @@ let hum = Number(latest[2]);
 let soil = Number(latest[3]);
 let ldr = Number(latest[4]);
 
-// TIME BIG
+// DIRECT DISPLAY (NO EMPTY STATE)
 document.getElementById("time").innerText = "⏰ " + time;
 
-// LDR
 document.getElementById("ldr").innerText = ldr;
-
-if(ldr > 2000){
-document.getElementById("ldrStatus").innerText = "🌙 Night";
-document.getElementById("ldrStatus").className = "status warn";
-} else {
-document.getElementById("ldrStatus").innerText = "☀ Bright";
-document.getElementById("ldrStatus").className = "status good";
-}
-
-// TEMP
 document.getElementById("temp").innerText = temp + " °C";
+document.getElementById("hum").innerText = hum + " %";
+document.getElementById("soil").innerText = soil;
 
+// LDR STATUS
+document.getElementById("ldrStatus").innerText =
+ldr > 2000 ? "🌙 Night" : "☀ Bright";
+document.getElementById("ldrStatus").className =
+ldr > 2000 ? "status warn" : "status good";
+
+// TEMP STATUS
 document.getElementById("tempStatus").innerText =
 temp > 35 ? "🔥 Hot" : "✅ Normal";
-
 document.getElementById("tempStatus").className =
 temp > 35 ? "status bad" : "status good";
 
-// HUM
-document.getElementById("hum").innerText = hum + " %";
-
+// HUM STATUS
 document.getElementById("humStatus").innerText =
 (hum < 40 || hum > 80) ? "⚠ Bad" : "✅ Good";
-
 document.getElementById("humStatus").className =
 (hum < 40 || hum > 80) ? "status bad" : "status good";
 
-// SOIL
-document.getElementById("soil").innerText = soil;
-
+// SOIL STATUS
 document.getElementById("soilStatus").innerText =
 soil < 300 ? "🔴 Dry" : "🟢 OK";
-
 document.getElementById("soilStatus").className =
 soil < 300 ? "status bad" : "status good";
 
