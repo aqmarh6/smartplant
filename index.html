@@ -42,12 +42,6 @@ text-align:center;
 box-shadow:0 2px 8px rgba(0,0,0,.15);
 }
 
-.ldr-card div{
-font-size:22px;
-font-weight:bold;
-margin-top:5px;
-}
-
 .cards{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
@@ -172,7 +166,23 @@ color:white;
 const sheetURL =
 "https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/gviz/tq?tqx=out:csv";
 
+/* ================= CLEAN FUNCTION ================= */
+function clean(v){
+  if(v === undefined || v === null) return 0;
+
+  let x = String(v).trim();
+
+  if(x === "" || x === "-" || x === "NaN") return 0;
+
+  let n = Number(x);
+
+  return isNaN(n) ? 0 : n;
+}
+
+/* ================= MAIN LOAD ================= */
 async function loadData(){
+
+try{
 
 const res = await fetch(sheetURL);
 const txt = await res.text();
@@ -180,62 +190,81 @@ const rows = txt.trim().split('\n');
 
 let html = "";
 
-// table
+/* ===== TABLE ===== */
 for(let i = 1; i < rows.length; i++){
+
 let c = rows[i].split(',');
+
+let t = c[0];
+let te = clean(c[1]);
+let h  = clean(c[2]);
+let s  = clean(c[3]);
+let l  = clean(c[4]);
 
 html += `
 <tr>
-<td>${c[0]}</td>
-<td>${c[1]}</td>
-<td>${c[2]}</td>
-<td>${c[3]}</td>
-<td>${c[4]}</td>
+<td>${t}</td>
+<td>${te}</td>
+<td>${h}</td>
+<td>${s}</td>
+<td>${l}</td>
 </tr>`;
 }
 
 document.getElementById("tableData").innerHTML = html;
 
-// latest
+/* ===== LATEST DATA ===== */
 let latest = rows[rows.length - 1].split(',');
 
 let time = latest[0];
-let temp = Number(latest[1]);
-let hum = Number(latest[2]);
-let soil = Number(latest[3]);
-let ldr = Number(latest[4]);
+let temp = clean(latest[1]);
+let hum  = clean(latest[2]);
+let soil = clean(latest[3]);
+let ldr  = clean(latest[4]);
 
-// DIRECT DISPLAY (NO EMPTY STATE)
+/* ===== TIME ===== */
 document.getElementById("time").innerText = "⏰ " + time;
 
+/* ===== LDR ===== */
 document.getElementById("ldr").innerText = ldr;
-document.getElementById("temp").innerText = temp + " °C";
-document.getElementById("hum").innerText = hum + " %";
-document.getElementById("soil").innerText = soil;
 
-// LDR STATUS
 document.getElementById("ldrStatus").innerText =
 ldr > 2000 ? "🌙 Night" : "☀ Bright";
+
 document.getElementById("ldrStatus").className =
 ldr > 2000 ? "status warn" : "status good";
 
-// TEMP STATUS
+/* ===== TEMP ===== */
+document.getElementById("temp").innerText = temp + " °C";
+
 document.getElementById("tempStatus").innerText =
 temp > 35 ? "🔥 Hot" : "✅ Normal";
+
 document.getElementById("tempStatus").className =
 temp > 35 ? "status bad" : "status good";
 
-// HUM STATUS
+/* ===== HUM ===== */
+document.getElementById("hum").innerText = hum + " %";
+
 document.getElementById("humStatus").innerText =
 (hum < 40 || hum > 80) ? "⚠ Bad" : "✅ Good";
+
 document.getElementById("humStatus").className =
 (hum < 40 || hum > 80) ? "status bad" : "status good";
 
-// SOIL STATUS
+/* ===== SOIL ===== */
+document.getElementById("soil").innerText = soil;
+
 document.getElementById("soilStatus").innerText =
 soil < 300 ? "🔴 Dry" : "🟢 OK";
+
 document.getElementById("soilStatus").className =
 soil < 300 ? "status bad" : "status good";
+
+}catch(err){
+console.log(err);
+alert("Error loading data!");
+}
 
 }
 
