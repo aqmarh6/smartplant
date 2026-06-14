@@ -63,16 +63,6 @@ font-weight:bold;
 margin-top:5px;
 }
 
-.status{
-font-size:14px;
-margin-top:5px;
-font-weight:bold;
-}
-
-.good{color:green;}
-.bad{color:red;}
-.warn{color:orange;}
-
 button{
 width:100%;
 padding:12px;
@@ -112,6 +102,7 @@ color:white;
 <p>IoT Plant Monitoring Dashboard</p>
 </div>
 
+<!-- TOP -->
 <div class="top-row">
 
 <div class="time-card" id="time"></div>
@@ -119,29 +110,26 @@ color:white;
 <div class="ldr-card">
 <h3>☀ LDR</h3>
 <div id="ldr"></div>
-<div id="ldrStatus" class="status"></div>
 </div>
 
 </div>
 
+<!-- CARDS -->
 <div class="cards">
 
 <div class="card">
 <h3>🌡 Temperature</h3>
 <div id="temp"></div>
-<div id="tempStatus" class="status"></div>
 </div>
 
 <div class="card">
 <h3>💧 Humidity</h3>
 <div id="hum"></div>
-<div id="humStatus" class="status"></div>
 </div>
 
 <div class="card">
-<h3>🌱 Soil Moisture</h3>
+<h3>🌱 Soil</h3>
 <div id="soil"></div>
-<div id="soilStatus" class="status"></div>
 </div>
 
 </div>
@@ -166,23 +154,7 @@ color:white;
 const sheetURL =
 "https://docs.google.com/spreadsheets/d/1FI6jO_OlWWsq-8FaKkjtwUyH-tLTTejBsmB97MBZcpk/gviz/tq?tqx=out:csv";
 
-/* ================= CLEAN FUNCTION ================= */
-function clean(v){
-  if(v === undefined || v === null) return 0;
-
-  let x = String(v).trim();
-
-  if(x === "" || x === "-" || x === "NaN") return 0;
-
-  let n = Number(x);
-
-  return isNaN(n) ? 0 : n;
-}
-
-/* ================= MAIN LOAD ================= */
 async function loadData(){
-
-try{
 
 const res = await fetch(sheetURL);
 const txt = await res.text();
@@ -190,81 +162,30 @@ const rows = txt.trim().split('\n');
 
 let html = "";
 
-/* ===== TABLE ===== */
+// TABLE
 for(let i = 1; i < rows.length; i++){
-
 let c = rows[i].split(',');
-
-let t = c[0];
-let te = clean(c[1]);
-let h  = clean(c[2]);
-let s  = clean(c[3]);
-let l  = clean(c[4]);
 
 html += `
 <tr>
-<td>${t}</td>
-<td>${te}</td>
-<td>${h}</td>
-<td>${s}</td>
-<td>${l}</td>
+<td>${c[0]}</td>
+<td>${c[1]}</td>
+<td>${c[2]}</td>
+<td>${c[3]}</td>
+<td>${c[4]}</td>
 </tr>`;
 }
 
 document.getElementById("tableData").innerHTML = html;
 
-/* ===== LATEST DATA ===== */
+// LATEST DATA (DIRECT DISPLAY)
 let latest = rows[rows.length - 1].split(',');
 
-let time = latest[0];
-let temp = clean(latest[1]);
-let hum  = clean(latest[2]);
-let soil = clean(latest[3]);
-let ldr  = clean(latest[4]);
-
-/* ===== TIME ===== */
-document.getElementById("time").innerText = "⏰ " + time;
-
-/* ===== LDR ===== */
-document.getElementById("ldr").innerText = ldr;
-
-document.getElementById("ldrStatus").innerText =
-ldr > 2000 ? "🌙 Night" : "☀ Bright";
-
-document.getElementById("ldrStatus").className =
-ldr > 2000 ? "status warn" : "status good";
-
-/* ===== TEMP ===== */
-document.getElementById("temp").innerText = temp + " °C";
-
-document.getElementById("tempStatus").innerText =
-temp > 35 ? "🔥 Hot" : "✅ Normal";
-
-document.getElementById("tempStatus").className =
-temp > 35 ? "status bad" : "status good";
-
-/* ===== HUM ===== */
-document.getElementById("hum").innerText = hum + " %";
-
-document.getElementById("humStatus").innerText =
-(hum < 40 || hum > 80) ? "⚠ Bad" : "✅ Good";
-
-document.getElementById("humStatus").className =
-(hum < 40 || hum > 80) ? "status bad" : "status good";
-
-/* ===== SOIL ===== */
-document.getElementById("soil").innerText = soil;
-
-document.getElementById("soilStatus").innerText =
-soil < 300 ? "🔴 Dry" : "🟢 OK";
-
-document.getElementById("soilStatus").className =
-soil < 300 ? "status bad" : "status good";
-
-}catch(err){
-console.log(err);
-alert("Error loading data!");
-}
+document.getElementById("time").innerText = latest[0];
+document.getElementById("temp").innerText = latest[1];
+document.getElementById("hum").innerText = latest[2];
+document.getElementById("soil").innerText = latest[3];
+document.getElementById("ldr").innerText = latest[4];
 
 }
 
